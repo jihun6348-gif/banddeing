@@ -1,11 +1,14 @@
 # Render 블루프린트 — GitHub 저장소를 연결하면 이 설정대로 서버가 만들어진다.
+# 입력할 빈칸 없이 Apply 만 누르면 배포된다. 카카오 로그인·메일·운영자 설정은
+# 배포 후 Render 대시보드 › Environment 에서 추가한다 (.env.example 참고).
 services:
   - type: web
     name: banddeing
     runtime: python
     region: singapore          # 한국과 가장 가까운 지역
-    # 무료 플랜: 영구 디스크가 없어서 재시작·재배포하면 DB와 사진이 지워진다 (시연용).
-    # 데이터를 유지하려면 plan: starter 로 바꾸고 아래 disk 블록 주석을 풀고 DATA_DIR 을 /var/data 로 바꾼다.
+    # 무료 플랜: 영구 디스크가 없어서 재시작·재배포·15분 미사용 후 잠들 때 DB와 사진이 지워진다 (시연용).
+    # 그래서 DEMO_MODE=1 로 켤 때마다 데모 데이터를 다시 넣는다.
+    # 실제 서비스로 쓰려면 plan: starter, 아래 disk 블록 주석 해제, DATA_DIR=/var/data, DEMO_MODE 삭제.
     plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn -c gunicorn.conf.py app:app
@@ -23,27 +26,7 @@ services:
         value: /tmp/banddeing-data
       - key: SECRET_KEY
         generateValue: true
+      - key: DEMO_MODE
+        value: "1"
       - key: OPERATOR_NAME
-        sync: false
-      - key: CONTACT_EMAIL
-        sync: false
-      - key: PRIVACY_OFFICER
-        sync: false
-      - key: ADMIN_EMAILS
-        sync: false
-      - key: PUBLIC_URL
-        sync: false
-      - key: KAKAO_REST_API_KEY
-        sync: false
-      - key: KAKAO_CLIENT_SECRET
-        sync: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        sync: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASSWORD
-        sync: false
-      - key: MAIL_FROM
-        sync: false
+        value: 웹프로그래밍 8조 반띵팀

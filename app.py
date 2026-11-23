@@ -129,7 +129,8 @@ log = logging.getLogger("banddeing")
 
 SITE = {
     "name": "반띵",
-    "url": ENV.get("PUBLIC_URL", "").rstrip("/"),
+    # PUBLIC_URL 이 없으면 Render 가 자동으로 넣어 주는 RENDER_EXTERNAL_URL 을 쓴다
+    "url": (ENV.get("PUBLIC_URL") or ENV.get("RENDER_EXTERNAL_URL", "")).rstrip("/"),
     "operator": ENV.get("OPERATOR_NAME", "반띵 운영팀"),
     "contact": ENV.get("CONTACT_EMAIL", ""),
     "privacy_officer": ENV.get("PRIVACY_OFFICER", ENV.get("OPERATOR_NAME", "반띵 운영팀")),
