@@ -1,0 +1,10 @@
+{
+  "name": "반띵 · 동네 소분 공동구매",
+  "short_name": "반띵",
+  "start_url": "/home",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#F2643D",
+  "lang": "ko",
+  "icons": [{ "src": "/static/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}

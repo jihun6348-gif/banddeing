@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='leaflet/leaflet.css') }}">{% endblock %}
+{% block header %}{{ back('픽업', url_for('my', tab='host' if room.is_host else 'join')) }}{% endblock %}
+{% block content %}
+<div id="pmap" style="height:180px"></div>
+<div class="body">
+  <div class="row">
+    <div><div style="font-size:18px;font-weight:700">{{ room.pickup_at|dt }} 픽업</div>
+      <div class="muted">{{ room.pickup_place }}{% if room.dist is not none %} · 내 위치에서 {{ room.dist|meters }}{% endif %}</div></div>
+    {% if room.status == 'pickup' %}<span class="badge orange">{{ room.pickup_at|left }}</span>{% else %}<span class="badge gray">거래 완료</span>{% endif %}
+  </div>
+
+  {% if room.status == 'pickup' %}
+  <form method="post" style="margin:14px 0">{{ csrf_field() }}<input type="hidden" name="action" value="arrive">
+    <button class="btn outline sm">📍 도착했어요 (다른 사람에게 알림)</button></form>
+  {% endif %}
+
+  {% if room.receipt_photo %}
+  <div class="sec">구매 인증 <span class="muted small">{% if room.expiry %}유통기한 {{ room.expiry }}{% endif %}</span></div>
+  <div class="photo-grid">
+    <img src="{{ url_for('private_upload', name=room.receipt_photo) }}" alt="영수증 사진">
+    {% if room.product_photo %}<img src="{{ url_for('private_upload', name=room.product_photo) }}" alt="상품 사진">{% endif %}
+  </div>
+  {% endif %}
+
+  <div class="sec">수령 체크</div>
+  {% for p in ps %}
+    <div class="ln row"><span><b>{{ p.nickname }}</b> · {{ p.slots }}칸 ({{ (p.slots * room.slot_qty)|qty }}{{ room.unit }})</span>
+      <span class="badge {{ 'green' if p.received else 'gray' }}">{{ '수령 확인 ✓' if p.received else '수령 전' }}</span></div>
+  {% endfor %}
+  <p class="muted small" style="margin-top:8px">참여자가 모두 [수령 확인]을 누르면 거래가 완료돼요.
+    {% if room.status == 'pickup' %}누르지 않아도 {{ auto_receive_at|dt }}(픽업 {{ auto_hours }}시간 뒤)에는 자동으로 수령 처리돼요.
+    받지 못했다면 그 전에 아래에서 신고해 주세요.{% endif %}</p>
+
+  <details style="margin-top:16px">
+    <summary class="muted small" style="cursor:pointer">문제가 생겼어요 (신고 · 문의)</summary>
+    <form method="post" action="{{ url_for('report', room_id=room.id) }}" style="margin-top:8px">{{ csrf_field() }}<input type="hidden" name="next" value="{{ url_for('pickup', room_id=room.id) }}">
+      <textarea class="inp" name="body" placeholder="예) 약속 시간에 아무도 오지 않았어요" maxlength="1000" required></textarea>
+      <button class="btn ghost sm" style="margin-top:8px">신고 접수</button></form>
+  </details>
+</div>
+{% endblock %}
+{% block bottom %}
+<div class="bottom">
+  {% if room.mine and not room.mine.received and room.status == 'pickup' %}
+    <form method="post">{{ csrf_field() }}<input type="hidden" name="action" value="receive"><button class="btn">받았어요 · 수령 확인</button></form>
+  {% elif room.status == 'done' or (room.mine and room.mine.received) %}
+    <a class="btn" href="{{ url_for('review_pick', room_id=room.id) }}">후기 남기기</a>
+  {% else %}
+    <a class="btn ghost" href="{{ url_for('chat', room_id=room.id) }}">채팅으로 연락하기</a>
+  {% endif %}
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
+<script nonce="{{ csp_nonce() }}">
+  const p = [{{ room.pickup_lat }}, {{ room.pickup_lng }}];
+  const m = L.map('pmap', { zoomControl: false, dragging: false, scrollWheelZoom: false }).setView(p, 17);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(m);
+  // 장소 이름은 사용자가 적은 글이라 HTML 로 넣지 않고 글자(textContent)로만 넣는다 (XSS 방지)
+  const tip = document.createElement('span'); tip.textContent = {{ room.pickup_place|tojson }};
+  L.marker(p).addTo(m).bindTooltip(tip, { permanent: true, direction: 'top' });
+</script>
+{% endblock %}

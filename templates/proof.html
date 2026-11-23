@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block header %}{{ back('구매 인증', url_for('my', tab='host')) }}{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" id="f" class="body">{{ csrf_field() }}
+  <div class="h1" style="margin-bottom:4px">장보기 완료! 인증해 주세요</div>
+  <div class="muted" style="margin-bottom:8px">영수증과 상품 사진은 참여자에게만 보여요</div>
+  <label class="lbl" for="receipt">영수증 사진 <span class="price">*</span></label>
+  <label class="filepick" for="receipt"><input id="receipt" type="file" name="receipt" accept="image/*" required><span class="fp-btn">📷 영수증 찍기 · 고르기</span><span class="fp-name">선택된 사진 없음</span></label>
+  <label class="lbl" for="product">상품 사진 <span class="muted">(선택)</span></label>
+  <label class="filepick" for="product"><input id="product" type="file" name="product" accept="image/*"><span class="fp-btn">📷 사진 선택</span><span class="fp-name">선택된 사진 없음</span></label>
+  <label class="lbl" for="expiry">유통기한</label>
+  <input class="inp" id="expiry" type="date" name="expiry">
+  <div class="box gray" style="margin-top:16px">
+    <div class="row"><span>픽업</span><b>{{ room.pickup_at|dt }}</b></div>
+    <div class="row"><span>장소</span><b>{{ room.pickup_place }}</b></div>
+  </div>
+</form>
+{% endblock %}
+{% block bottom %}
+<div class="bottom"><button class="btn" form="f">참여자에게 구매 완료 알리기</button></div>
+{% endblock %}

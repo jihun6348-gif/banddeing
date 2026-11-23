@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block title %}공구방 수정 · 반띵{% endblock %}
+{% block header %}{{ back('공구방 수정', url_for('room_detail', room_id=room.id)) }}{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" id="f" class="body">
+  {{ csrf_field() }}
+  <div class="h1">공구방 정보 수정</div>
+  {% if locked %}<div class="box gray small" style="margin-bottom:8px">참여한 이웃이 있어서 <b>상품명·카테고리</b>는 바꿀 수 없어요.
+    참여할 때 본 상품과 달라지면 안 되니까요. 바꾸려면 공구방을 닫고 새로 열어 주세요.</div>{% endif %}
+
+  <label class="lbl">상품 사진</label>
+  {% if room.photo %}
+    <img src="{{ url_for('public_upload', name=room.photo) }}" alt="현재 상품 사진" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px">
+    <label class="radio" style="margin-top:8px"><span class="small">지금 사진 지우기</span><input type="checkbox" name="remove_photo" value="1" {% if f.remove_photo %}checked{% endif %}></label>
+  {% endif %}
+  <label class="filepick" for="photo" style="margin-top:8px"><input id="photo" type="file" name="photo" accept="image/*"><span class="fp-btn">📷 {{ '새 사진으로 바꾸기' if room.photo else '사진 선택' }}</span><span class="fp-name">선택된 사진 없음</span></label>
+
+  <label class="lbl" for="title">상품명</label>
+  {% if locked %}
+    <input class="inp" id="title" value="{{ room.title }}" disabled>
+  {% else %}
+    <input class="inp" id="title" name="title" value="{{ f.title }}" maxlength="40" required>
+  {% endif %}
+
+  <label class="lbl" for="buy_from">구매처 <span class="muted">(선택)</span></label>
+  <input class="inp" id="buy_from" name="buy_from" value="{{ f.buy_from or '' }}" maxlength="40">
+
+  <label class="lbl">카테고리</label>
+  <div class="chips" style="flex-wrap:wrap">
+    {% for k, n, i in categories %}
+      <label class="chip"><input type="radio" {% if not locked %}name="category"{% endif %} value="{{ k }}" {% if (room.category if locked else f.category) == k %}checked{% endif %} {% if locked %}disabled{% endif %}>{{ i }} {{ n }}</label>
+    {% endfor %}
+  </div>
+
+  <label class="lbl" for="ref_price">소포장으로 살 때 가격 <span class="muted">(선택)</span></label>
+  <input class="inp" id="ref_price" name="ref_price" inputmode="numeric" value="{{ f.ref_price or '' }}">
+
+  <label class="lbl" for="pickup_at">픽업 일시</label>
+  <input class="inp" id="pickup_at" type="datetime-local" name="pickup_at" value="{{ f.pickup_at }}" required>
+  <label class="lbl" for="deadline">모집 마감</label>
+  <input class="inp" id="deadline" type="datetime-local" name="deadline" value="{{ f.deadline }}" required>
+
+  <div class="box gray small" style="margin-top:14px">
+    가격 · 수량 · 칸 수 · 픽업 장소 · 계좌는 이웃과의 약속이라 고칠 수 없어요.
+    바꿔야 한다면 공구방을 닫고 새로 열어 주세요.
+    {% if locked %}<br>픽업·마감 시간을 바꾸면 참여한 이웃에게 알림이 가요.{% endif %}
+  </div>
+</form>
+{% endblock %}
+{% block bottom %}
+<div class="bottom btn-row">
+  <a class="btn ghost" href="{{ url_for('room_detail', room_id=room.id) }}" style="width:110px;flex:none">취소</a>
+  <button class="btn" form="f">저장</button>
+</div>
+{% endblock %}

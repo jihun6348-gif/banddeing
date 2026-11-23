@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_macros.html" import footer_links with context %}
+{% block title %}로그인 · 반띵{% endblock %}
+{% block content %}
+<div class="body" style="padding-top:56px;text-align:center">
+  <div class="logo">반띵</div>
+  <div style="font-size:19px;font-weight:700;margin-top:16px">우리 동네 소분 공동구매</div>
+  {% if shared %}
+    <div class="box" style="margin-top:14px">로그인하면 <b>‘{{ shared.title }}’</b> 공구방으로 바로 이동해요</div>
+  {% else %}
+    <div class="muted" style="margin-top:6px">로그인하고 내 주변 공구방을 확인하세요</div>
+  {% endif %}
+</div>
+
+<div class="body" style="padding-top:8px">
+  {% if KAKAO_ENABLED %}
+    <a class="btn kakao" href="{{ url_for('kakao_start', next=nxt) }}">카카오로 시작하기</a>
+    <div class="or"><span>또는 이메일로</span></div>
+  {% endif %}
+  <form method="post">
+    {{ csrf_field() }}
+    <input type="hidden" name="next" value="{{ nxt }}">
+    <label class="lbl" for="email">이메일</label>
+    <input class="inp" id="email" name="email" type="email" autocomplete="email" required autofocus>
+    <label class="lbl" for="password">비밀번호</label>
+    <input class="inp" id="password" name="password" type="password" autocomplete="current-password" required>
+    <button class="btn" style="margin-top:16px">로그인</button>
+  </form>
+  <div class="row small" style="margin-top:12px">
+    <a class="u" href="{{ url_for('signup', next=nxt) }}">이메일로 회원가입</a>
+    <a class="muted u" href="{{ url_for('password_forgot') }}">비밀번호를 잊었어요</a>
+  </div>
+</div>
+
+{% if demo %}
+<div class="body" style="padding-top:0">
+  <div class="sec">데모 계정으로 바로 보기 <span class="badge gray">데모 모드</span></div>
+  <div class="btn-row">
+    {% for u in demo %}
+    <form method="post" action="{{ url_for('login_demo', uid=u.id) }}" style="flex:1">
+      {{ csrf_field() }}
+      <input type="hidden" name="next" value="{{ nxt }}">
+      <button class="btn ghost sm">{{ u.nickname }}</button>
+    </form>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{{ footer_links() }}
+{% endblock %}

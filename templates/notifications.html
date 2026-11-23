@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block header %}{{ back('알림', url_for('home')) }}{% endblock %}
+{% block content %}
+<div class="body" style="padding-top:4px">
+  {% set colors = {'픽업': 'orange', '구매 완료': 'green', '모집 완료': 'blue', '관심': 'gray', '후기': 'gray', '거래 완료': 'green', '입금 요청': 'orange'} %}
+  {% for n in rows %}
+    <a class="ln" href="{{ n.link or '#' }}" style="display:block;{% if not n.is_read %}background:#FFFAF7;margin:0 -16px;padding:12px 16px{% endif %}">
+      <span class="badge {{ colors.get(n.kind, 'gray') }}">{{ n.kind }}</span> <b>{{ n.body }}</b>
+      <div class="muted small">{{ n.created_at|ago }}</div>
+    </a>
+  {% else %}
+    <div class="empty"><div class="e">🔔</div>아직 알림이 없어요.</div>
+  {% endfor %}
+</div>
+{% endblock %}

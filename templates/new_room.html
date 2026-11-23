@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block title %}방 만들기 · 반띵{% endblock %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='leaflet/leaflet.css') }}">{% endblock %}
+{% block header %}{{ back('방 만들기', url_for('home')) }}{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data" id="f" class="body">
+  {{ csrf_field() }}
+  <div class="steps"><i class="on" data-s="1"></i><i data-s="2"></i><i data-s="3"></i></div>
+
+  <!-- S08 상품 정보 -->
+  <section data-step="1">
+    <div class="h1">어떤 상품을 나눌까요?</div>
+    <label class="lbl" for="photo">상품 사진 <span class="muted">(선택)</span></label>
+    <label class="filepick" for="photo"><input id="photo" type="file" name="photo" accept="image/*"><span class="fp-btn">📷 사진 선택</span><span class="fp-name">선택된 사진 없음</span></label>
+    <label class="lbl" for="title">상품명</label>
+    <input class="inp" id="title" name="title" value="{{ f.title }}" maxlength="40" placeholder="예) 계란 30구 특란" required>
+    <label class="lbl" for="buy_from">구매처</label>
+    <input class="inp" id="buy_from" name="buy_from" value="{{ f.buy_from }}" maxlength="40" placeholder="예) 이마트 청량리점">
+    <label class="lbl">카테고리</label>
+    <div class="chips" style="flex-wrap:wrap">
+      {% for k, n, i in CATEGORIES %}
+        <label class="chip"><input type="radio" name="category" value="{{ k }}" {% if (f.category or 'egg') == k %}checked{% endif %}>{{ i }} {{ n }}</label>
+      {% endfor %}
+    </div>
+    <label class="lbl" for="total_price">총 구매 가격 (원)</label>
+    <input class="inp" id="total_price" name="total_price" inputmode="numeric" value="{{ f.total_price }}" placeholder="9000" required>
+    {% if shop %}
+      <label class="radio" style="margin-top:14px"><span><b>🏪 {{ shop.name }} 공식 공구로 열기</b><br><span class="muted small">가게에서 수령, 방장 몫 0칸 가능</span></span>
+        <input type="checkbox" name="official" value="1" {% if f.official or not f.title %}checked{% endif %}></label>
+    {% endif %}
+  </section>
+
+  <!-- S09 소분 설정 -->
+  <section data-step="2" hidden>
+    <div class="h1">어떻게 나눌까요?</div>
+    <div class="btn-row">
+      <div style="flex:1"><label class="lbl" for="total_qty">총 수량</label>
+        <input class="inp" id="total_qty" name="total_qty" inputmode="decimal" value="{{ f.total_qty }}" placeholder="30"></div>
+      <div style="width:110px"><label class="lbl" for="unit">단위</label>
+        <input class="inp" id="unit" name="unit" value="{{ f.unit or '구' }}" maxlength="6" placeholder="구, kg, 롤"></div>
+    </div>
+    <label class="lbl" for="slot_qty">한 칸에 담을 양</label>
+    <input class="inp" id="slot_qty" name="slot_qty" inputmode="decimal" value="{{ f.slot_qty }}" placeholder="10">
+    <label class="lbl">내가 가질 칸</label>
+    <div class="row"><span class="muted small">{{ '상점 공구는 0칸 가능' if shop else '최소 1칸' }}</span>
+      <span class="stepper"><button type="button" data-hs="-1">−</button>
+        <input name="host_slots" id="host_slots" value="{{ f.host_slots or 1 }}" readonly>
+        <button type="button" data-hs="1">＋</button></span></div>
+    <label class="lbl" for="ref_price">같은 양 소포장 가격 <span class="muted">(선택, 절약 금액 계산용)</span></label>
+    <input class="inp" id="ref_price" name="ref_price" inputmode="numeric" value="{{ f.ref_price or '' }}" placeholder="예) 10구 소포장 4000">
+    <div class="box" style="margin-top:16px">
+      <div class="muted small" style="margin-bottom:6px">자동 계산</div>
+      <div class="row"><span>총 칸 수</span><b id="c-count">-</b></div>
+      <div class="row"><span>모집할 칸</span><b id="c-open">-</b></div>
+      <div class="row"><span>1칸 가격</span><b class="price" id="c-price">-</b></div>
+      <div class="muted small" id="c-warn" style="margin-top:6px">※ 1칸 가격은 10원 단위로 올림하고, 차액은 방장 몫이에요.</div>
+    </div>
+  </section>
+
+  <!-- S10 픽업 장소 -->
+  <section data-step="3" hidden>
+    <div class="h1">어디서 만날까요?</div>
+    <div class="muted" style="margin-bottom:8px">밝고 사람이 많은 <b>공개 장소</b>로 정해 주세요. 집 주소는 피해 주세요.</div>
+    {% set chosen = f.place or ('shop' if shop else '') %}
+    {% if shop %}
+      <label class="radio"><b>🏪 {{ shop.name }} (가게에서 수령)</b><input type="radio" name="place" value="shop" {% if chosen == 'shop' %}checked{% endif %}></label>
+    {% endif %}
+    {% for p in places %}
+      <label class="radio"><b>{{ p.name }}</b><span class="row" style="gap:8px"><span class="muted">{{ p.dist|meters }}</span>
+        <input type="radio" name="place" value="s{{ loop.index }}" data-name="{{ p.name }}" data-lat="{{ p.lat }}" data-lng="{{ p.lng }}" {% if chosen == 's' ~ loop.index %}checked{% endif %}></span></label>
+    {% endfor %}
+    <label class="radio"><b>지도에서 직접 고르기</b><input type="radio" name="place" value="map" {% if chosen == 'map' or (not chosen and not places) %}checked{% endif %}></label>
+    <div id="place-pick" class="stack" style="margin-top:4px">
+      <div id="pmap" style="height:200px;border-radius:12px;background:var(--gray-soft)"></div>
+      <p class="muted small" id="pmsg">지도를 눌러 만날 곳에 핀을 꽂아 주세요.</p>
+      <input class="inp" id="place_name" name="place_name" value="{{ f.place_name }}" maxlength="40" placeholder="장소 이름 (예: GS25 회기역점 앞)">
+    </div>
+    <input type="hidden" name="place_lat" id="place_lat" value="{{ f.place_lat }}">
+    <input type="hidden" name="place_lng" id="place_lng" value="{{ f.place_lng }}">
+    <label class="lbl" for="pickup_at">픽업 일시</label>
+    <input class="inp" id="pickup_at" type="datetime-local" name="pickup_at" value="{{ f.pickup_at }}" required>
+    <label class="lbl" for="deadline">모집 마감 <span class="muted">(최대 14일)</span></label>
+    <input class="inp" id="deadline" type="datetime-local" name="deadline" value="{{ f.deadline }}" required>
+    <label class="lbl" for="bank">참여자가 송금할 내 계좌</label>
+    <input class="inp" id="bank" name="bank" value="{{ f.bank }}" maxlength="60" placeholder="예) 국민 123-45-678901 홍길동" required>
+    <p class="muted small" style="margin-top:6px">계좌는 이 방에 참여한 이웃에게만 보여요. 반띵은 돈을 대신 받지 않아요.</p>
+    <label class="radio" style="margin-top:14px;align-items:flex-start"><span class="small">공개 장소에서 직접 건네고, 구매 후 영수증을 인증하고, 식품은 위생적으로 소분·보관할게요. <a class="u" href="{{ url_for('terms') }}" target="_blank">거래 원칙</a></span>
+      <input type="checkbox" name="agree_rules" value="1" {% if f.agree_rules %}checked{% endif %}></label>
+  </section>
+</form>
+{% endblock %}
+{% block bottom %}
+<div class="bottom btn-row">
+  <button type="button" class="btn ghost" id="prev" style="width:110px;flex:none" hidden>이전</button>
+  <button type="button" class="btn" id="next">다음 (1/3)</button>
+  <button class="btn" id="submit" form="f" hidden>공구방 열기</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
+<script nonce="{{ csp_nonce() }}">
+  let step = 1;
+  const minHost = {{ 0 if shop else 1 }};
+  const $ = id => document.getElementById(id);
+  function show(n) {
+    step = n;
+    document.querySelectorAll('[data-step]').forEach(s => s.hidden = +s.dataset.step !== n);
+    document.querySelectorAll('.steps i').forEach(i => i.classList.toggle('on', +i.dataset.s <= n));
+    $('prev').hidden = n === 1;
+    $('next').hidden = n === 3; $('submit').hidden = n !== 3;
+    $('next').textContent = `다음 (${n}/3)`;
+    window.scrollTo(0, 0);
+  }
+  $('next').onclick = () => {
+    const sec = document.querySelector(`[data-step="${step}"]`);
+    const bad = [...sec.querySelectorAll('input[required]')].find(i => !i.value.trim());
+    if (bad) { bad.focus(); bad.reportValidity?.(); return; }
+    if (step === 2 && !calc().ok) { $('c-warn').style.color = '#C94A24'; return; }
+    show(step + 1);
+    if (step === 3) setTimeout(() => pmap.invalidateSize(), 50);
+  };
+  $('prev').onclick = () => show(step - 1);
+  document.querySelectorAll('[data-hs]').forEach(b => b.addEventListener('click', () => hs(+b.dataset.hs)));
+  function hs(d) { const el = $('host_slots'); el.value = Math.max(minHost, +el.value + d); calc(); }
+  function calc() {
+    const price = +$('total_price').value.replace(/,/g, ''), total = +$('total_qty').value, per = +$('slot_qty').value, host = +$('host_slots').value;
+    if (!(price > 0 && total > 0 && per > 0)) { ['c-count', 'c-open', 'c-price'].forEach(i => $(i).textContent = '-'); return { ok: false }; }
+    const count = Math.floor(total / per + 1e-9), even = Math.abs(total - count * per) < 1e-9;
+    const unitPrice = count ? Math.ceil(price / count / 10) * 10 : 0;
+    $('c-count').textContent = count + '칸';
+    $('c-open').textContent = Math.max(0, count - host) + '칸';
+    $('c-price').textContent = unitPrice.toLocaleString('ko-KR') + '원';
+    let warn = '※ 1칸 가격은 10원 단위로 올림하고, 차액은 방장 몫이에요.', ok = true;
+    if (!even) { warn = '총 수량이 한 칸의 양으로 딱 나눠떨어져야 해요.'; ok = false; }
+    else if (count < 2) { warn = '최소 2칸 이상으로 나눠야 해요.'; ok = false; }
+    else if (count - host < 1) { warn = '모집할 칸이 1칸 이상 남아야 해요.'; ok = false; }
+    $('c-warn').textContent = warn; $('c-warn').style.color = ok ? '' : '#C94A24';
+    return { ok };
+  }
+  ['total_price', 'total_qty', 'slot_qty'].forEach(i => $(i).addEventListener('input', calc));
+  // 픽업 장소: 추천 장소를 고르거나 지도에 핀을 꽂는다
+  const HOME = [{{ me.lat }}, {{ me.lng }}];
+  const pmap = L.map('pmap').setView($('place_lat').value ? [+$('place_lat').value, +$('place_lng').value] : HOME, 16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(pmap);
+  L.circle(HOME, { radius: {{ me.radius }}, color: '#F2643D', weight: 1, dashArray: '4 6', fillOpacity: 0.03 }).addTo(pmap);
+  let pin = $('place_lat').value ? L.marker([+$('place_lat').value, +$('place_lng').value]).addTo(pmap) : null;
+  function setPin(lat, lng) {
+    $('place_lat').value = lat.toFixed(6); $('place_lng').value = lng.toFixed(6);
+    if (pin) pin.setLatLng([lat, lng]); else pin = L.marker([lat, lng]).addTo(pmap);
+    $('pmsg').textContent = '핀을 꽂았어요. 장소 이름을 적어 주세요.';
+  }
+  pmap.on('click', e => { document.querySelector('[name=place][value=map]').checked = true; syncPlace(); setPin(e.latlng.lat, e.latlng.lng); });
+  function syncPlace() {
+    const sel = document.querySelector('[name=place]:checked');
+    const isShop = sel && sel.value === 'shop';
+    $('place-pick').hidden = isShop;
+    if (sel && sel.dataset.lat) {
+      setPin(+sel.dataset.lat, +sel.dataset.lng); pmap.setView([+sel.dataset.lat, +sel.dataset.lng], 16);
+      $('place_name').value = sel.dataset.name;
+    } else if (sel && sel.value === 'map' && !$('place_lat').value) { $('place_name').value = ''; }
+    setTimeout(() => pmap.invalidateSize(), 50);
+  }
+  document.querySelectorAll('[name=place]').forEach(r => r.addEventListener('change', syncPlace));
+  syncPlace();
+  $('f').addEventListener('submit', e => {
+    const sel = document.querySelector('[name=place]:checked');
+    if ((!sel || sel.value !== 'shop') && (!$('place_lat').value || !$('place_name').value.trim())) {
+      e.preventDefault(); $('pmsg').textContent = '지도에 핀을 꽂고 장소 이름을 적어 주세요.'; $('pmsg').style.color = '#C94A24';
+    }
+  });
+  calc();
+</script>
+{% endblock %}

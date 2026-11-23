@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_macros.html" import agreements %}
+{% block title %}가입 마무리 · 반띵{% endblock %}
+{% block header %}<header class="hdr"><div class="t">거의 다 됐어요</div></header>{% endblock %}
+{% block content %}
+<form method="post" id="f" class="body">
+  {{ csrf_field() }}
+  <p class="muted">카카오 계정으로 가입해요. 이웃에게 보일 닉네임을 확인해 주세요.</p>
+  <label class="lbl" for="nickname">닉네임 <span class="muted">(한글·영문·숫자 2~12자)</span></label>
+  <input class="inp" id="nickname" name="nickname" value="{{ nickname }}" maxlength="12" required>
+  <div style="margin-top:18px">{{ agreements(f) }}</div>
+</form>
+{% endblock %}
+{% block bottom %}<div class="bottom"><button class="btn" form="f">가입 완료</button></div>{% endblock %}

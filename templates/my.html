@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% from "_macros.html" import thumb %}
+{% macro flow(status) -%}
+{% set order = ['recruiting', 'deposit', 'buying', 'pickup', 'done'] %}
+{% set names = ['모집', '입금', '구매', '픽업', '완료'] %}
+<div class="flow">{% for s in order %}<span class="{% if loop.index0 <= order.index(status) %}on{% endif %}">{{ names[loop.index0] }}</span>{% if not loop.last %}<span>›</span>{% endif %}{% endfor %}</div>
+{%- endmacro %}
+
+{% macro my_card(r, role) -%}
+<div class="card" style="display:block">
+  <a class="row" style="gap:12px;align-items:flex-start" href="{{ url_for('room_detail', room_id=r.id) }}">
+    {{ thumb(r) }}
+    <div class="info">
+      <div class="row"><div class="tt">{{ r.title }}</div><span class="badge {{ r.status_color }}">{{ r.status_label }}</span></div>
+      {% if r.status == 'recruiting' %}<div class="muted small">{{ r.taken }}/{{ r.slot_count }}칸 · 마감 {{ r.deadline|left }}</div>
+      {% elif r.status == 'deposit' and role == 'host' %}<div class="muted small">{% if r.unpaid %}미입금 {{ r.unpaid }}명 · 24시간 안에 입금{% else %}모두 입금 · 24시간 안에 구매 확정 (안 하면 자동 취소){% endif %}</div>
+      {% elif role == 'join' and r.mine %}<div class="muted small">내 몫 {{ r.mine.slots }}칸 · {{ (r.mine.slots * r.slot_price)|won }} · {{ '입금 완료' if r.mine.paid else '미입금' }}</div>
+      {% elif r.status in ('failed','canceled') %}<div class="muted small">{{ r.cancel_reason or r.status_label }}</div>
+      {% else %}<div class="muted small">{{ r.pickup_place }}</div>{% endif %}
+      <div class="muted small">픽업 {{ r.pickup_at|dt }}</div>
+      {% if r.status in ('recruiting','deposit','buying','pickup','done') %}{{ flow(r.status) }}{% endif %}
+    </div>
+  </a>
+  <div class="btn-row" style="margin-top:10px">
+    <a class="btn ghost sm" href="{{ url_for('chat', room_id=r.id) }}">채팅</a>
+    {% if role == 'host' and r.status in ('recruiting', 'deposit') %}
+      <a class="btn sm" href="{{ url_for('deposits', room_id=r.id) }}">입금 확인</a>
+    {% elif role == 'host' and r.status == 'buying' %}
+      <a class="btn sm" href="{{ url_for('proof', room_id=r.id) }}">구매 인증하기</a>
+    {% elif role == 'join' and r.mine and not r.mine.paid and r.status in ('recruiting', 'deposit') %}
+      <form method="post" action="{{ url_for('mark_paid', room_id=r.id) }}" style="flex:1">{{ csrf_field() }}<button class="btn sm">입금 완료 표시</button></form>
+    {% elif r.status == 'pickup' %}
+      <a class="btn sm" href="{{ url_for('pickup', room_id=r.id) }}">픽업하러 가기</a>
+    {% elif r.status == 'done' %}
+      <a class="btn sm outline" href="{{ url_for('review_pick', room_id=r.id) }}">후기</a>
+    {% endif %}
+  </div>
+</div>
+{%- endmacro %}
+
+{% block header %}<header class="hdr"><div class="t">내 공구</div>
+  <a class="icon-btn" href="{{ url_for('notifications') }}" aria-label="알림">🔔{% if unread %}<span class="dot">{{ unread }}</span>{% endif %}</a></header>{% endblock %}
+{% block content %}
+<nav class="tabs">
+  <a href="{{ url_for('my', tab='host') }}" class="{% if tab == 'host' %}on{% endif %}">운영 중 {{ hosting|length }}</a>
+  <a href="{{ url_for('my', tab='join') }}" class="{% if tab == 'join' %}on{% endif %}">참여 중 {{ joined|length }}</a>
+  <a href="{{ url_for('my', tab='done') }}" class="{% if tab == 'done' %}on{% endif %}">완료</a>
+</nav>
+<div class="body stack">
+  {% set rows = hosting if tab == 'host' else (joined if tab == 'join' else finished) %}
+  {% for r in rows %}
+    {{ my_card(r, 'host' if r.is_host else 'join') }}
+  {% else %}
+    <div class="empty"><div class="e">🧺</div>
+      {% if tab == 'host' %}운영 중인 공구방이 없어요.<br><a class="price" href="{{ url_for('new_room') }}">방 만들기 ›</a>
+      {% elif tab == 'join' %}참여 중인 공구가 없어요.<br><a class="price" href="{{ url_for('home') }}">근처 공구방 보기 ›</a>
+      {% else %}완료된 거래가 없어요.{% endif %}</div>
+  {% endfor %}
+</div>
+{% endblock %}

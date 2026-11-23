@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_macros.html" import room_card %}
+{% block content %}
+<div class="body" style="text-align:center;padding-top:56px">
+  <div style="width:64px;height:64px;border-radius:50%;background:var(--green-soft);color:var(--green);font-size:30px;line-height:64px;margin:0 auto">✓</div>
+  <div style="font-size:20px;font-weight:800;margin-top:14px">공구방이 열렸어요!</div>
+  <div class="muted">이웃 {{ room.slot_count - room.host_slots }}칸이 채워지면 입금이 시작돼요</div>
+</div>
+<div class="body" style="padding-top:0">
+  {{ room_card(room, room.slot_qty|qty ~ room.unit ~ '씩 · ' ~ room.pickup_place ~ ' · 마감 ' ~ (room.deadline|dt)) }}
+  <div class="sec">빨리 모으려면 공유해 보세요</div>
+  <div class="btn-row">
+    <button class="btn kakao sm" id="share-btn">공유하기</button>
+    <button class="btn ghost sm" id="copy-btn">링크 복사</button>
+  </div>
+  <p class="muted small" style="margin-top:8px">링크로 들어온 이웃은 로그인 후 이 공구방으로 바로 이동해요.</p>
+</div>
+{% endblock %}
+{% block bottom %}
+<div class="bottom"><a class="btn outline" href="{{ url_for('my', tab='host') }}">내 공구에서 보기</a></div>
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}">
+  const url = {{ share_url|tojson }}, text = {{ ('반띵 · ' ~ room.title ~ ' 1칸 ' ~ (room.slot_price|won) ~ ' 같이 나눠요!')|tojson }};
+  function copy(b) { navigator.clipboard?.writeText(url).then(() => { b.textContent = '복사됨 ✓'; }); }
+  function share() {
+    if (navigator.share) navigator.share({ title: '반띵', text, url });
+    else copy(document.getElementById('copy-btn'));
+  }
+  document.getElementById('share-btn').addEventListener('click', share);
+  document.getElementById('copy-btn').addEventListener('click', e => copy(e.currentTarget));
+</script>
+{% endblock %}

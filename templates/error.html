@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}안내 · 반띵{% endblock %}
+{% block content %}
+<div class="empty" style="padding-top:120px"><div class="e">🙈</div>{{ msg }}
+  {% if err_msg %}<div class="muted small" style="margin-top:6px">오류 코드 {{ err_msg }}</div>{% endif %}
+  <div style="margin-top:16px;display:flex;gap:8px;justify-content:center">
+    <button type="button" class="chip" data-back>◀ 뒤로</button>
+    <a class="chip" href="{{ url_for('index') }}">처음으로</a></div></div>
+{% endblock %}

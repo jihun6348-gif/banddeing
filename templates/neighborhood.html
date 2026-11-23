@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block title %}동네 설정 · 반띵{% endblock %}
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='leaflet/leaflet.css') }}">
+{% endblock %}
+{% block header %}{{ back('동네 설정', url_for('me') if me.lat is not none else None) }}{% endblock %}
+{% block content %}
+<form method="post" id="f" class="body">
+  {{ csrf_field() }}
+  <input type="hidden" name="next" value="{{ nxt }}">
+  <input type="hidden" name="lat" id="lat" value="{{ me.lat if me.lat is not none else '' }}">
+  <input type="hidden" name="lng" id="lng" value="{{ me.lng if me.lng is not none else '' }}">
+  <p class="muted" style="margin-bottom:8px">내 위치 주변 공구방만 보여 드려요. 정확한 위치는 다른 이웃에게 공개되지 않아요.</p>
+  <div id="map" style="height:220px;border-radius:14px;background:var(--gray-soft)"></div>
+  <div class="btn-row" style="margin-top:10px">
+    <button type="button" class="btn sm outline" id="gps">📍 현재 위치 가져오기</button>
+    {% if DEMO_MODE %}<button type="button" class="btn sm ghost" id="demo">데모 위치 (회기역)</button>{% endif %}
+  </div>
+  <p class="muted small" id="pos" style="margin-top:6px">{% if me.lat is not none %}설정된 위치를 쓰고 있어요{% else %}현재 위치를 가져오거나 지도를 눌러 정해 주세요{% endif %}</p>
+
+  <label class="lbl" for="name">우리 동네 이름</label>
+  <input class="inp" id="name" name="name" value="{{ me.neighborhood or '' }}" maxlength="20" placeholder="예) 회기동" required>
+
+  <label class="lbl">활동 반경</label>
+  <div class="seg">
+    <label><input type="radio" name="radius" value="500" {% if (me.radius or 500) == 500 %}checked{% endif %}>500m</label>
+    <label><input type="radio" name="radius" value="1000" {% if me.radius == 1000 %}checked{% endif %}>1km</label>
+  </div>
+</form>
+
+{% if MAIL_ENABLED %}
+<div class="body" style="padding-top:0">
+  <div class="sec">학교 인증 <span class="muted small">(선택 · 신뢰 배지)</span></div>
+  {% if me.school_verified %}
+    <div class="box green small">✓ {{ me.school_email }} 인증 완료</div>
+  {% else %}
+    <form method="post" action="{{ url_for('school_send') }}" class="composer">
+      {{ csrf_field() }}
+      <input class="inp" name="school_email" type="email" placeholder="example@khu.ac.kr" required>
+      <button class="btn sm ghost" style="width:96px">번호 받기</button>
+    </form>
+    {% if request.args.get('code_sent') %}
+    <form method="post" action="{{ url_for('school_confirm') }}" class="composer" style="margin-top:8px">
+      {{ csrf_field() }}
+      <input class="inp" name="code" inputmode="numeric" maxlength="6" placeholder="인증번호 6자리" required>
+      <button class="btn sm" style="width:96px">확인</button>
+    </form>
+    {% endif %}
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}
+{% block bottom %}
+<div class="bottom"><button class="btn" form="f">이 동네로 시작하기</button></div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
+<script nonce="{{ csp_nonce() }}">
+  const DEFAULT = [37.5665, 126.9780];  // 위치를 정하기 전 지도 중심 (서울시청)
+  const latEl = document.getElementById('lat'), lngEl = document.getElementById('lng'), pos = document.getElementById('pos');
+  const has = latEl.value !== '';
+  const start = has ? [+latEl.value, +lngEl.value] : DEFAULT;
+  const map = L.map('map').setView(start, has ? 15 : 11);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+  const marker = L.marker(start, { draggable: true, opacity: has ? 1 : 0 }).addTo(map);
+  function set(lat, lng, msg) {
+    latEl.value = lat.toFixed(6); lngEl.value = lng.toFixed(6);
+    marker.setLatLng([lat, lng]).setOpacity(1); map.setView([lat, lng], 15);
+    pos.textContent = msg;
+  }
+  marker.on('dragend', e => { const p = e.target.getLatLng(); set(p.lat, p.lng, '핀을 옮긴 위치로 정했어요'); });
+  map.on('click', e => set(e.latlng.lat, e.latlng.lng, '지도에서 고른 위치로 정했어요'));
+  {% if DEMO_MODE %}
+  document.getElementById('demo').onclick = () => {
+    set({{ demo[0] }}, {{ demo[1] }}, '데모 위치(회기역)로 정했어요');
+    const n = document.getElementById('name'); if (!n.value) n.value = '회기동';
+  };
+  {% endif %}
+  document.getElementById('gps').onclick = () => {
+    if (!navigator.geolocation) { pos.textContent = '이 브라우저는 위치를 지원하지 않아요. 지도를 눌러 정해 주세요.'; return; }
+    pos.textContent = '위치를 확인하는 중…';
+    navigator.geolocation.getCurrentPosition(
+      p => set(p.coords.latitude, p.coords.longitude, 'GPS로 현재 위치를 확인했어요'),
+      () => { pos.textContent = '위치 권한이 없어요. 지도를 눌러 정해 주세요.'; },
+      { enableHighAccuracy: true, timeout: 10000 });
+  };
+  document.getElementById('f').addEventListener('submit', e => {
+    if (!latEl.value) { e.preventDefault(); pos.textContent = '먼저 위치를 정해 주세요.'; pos.style.color = '#C94A24'; }
+  });
+</script>
+{% endblock %}

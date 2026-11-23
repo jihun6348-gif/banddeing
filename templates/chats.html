@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import thumb %}
+{% block header %}<header class="hdr"><div class="t">채팅</div></header>{% endblock %}
+{% block content %}
+<div class="body">
+  {% for r in rooms %}
+    <a class="ln row" href="{{ url_for('chat', room_id=r.id) }}" style="gap:12px;justify-content:flex-start">
+      {{ thumb(r) }}
+      <div style="flex:1;min-width:0">
+        <div class="row"><b>{{ r.title }}</b><span class="muted small">{{ r.last.created_at|ago if r.last else '' }}</span></div>
+        <div class="muted small" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.last.body if r.last else '' }}</div>
+        <span class="badge {{ r.status_color }}" style="margin-top:4px">{{ r.status_label }}</span>
+      </div>
+    </a>
+  {% else %}
+    <div class="empty"><div class="e">💬</div>공구방에 참여하면 채팅이 열려요.</div>
+  {% endfor %}
+</div>
+{% endblock %}

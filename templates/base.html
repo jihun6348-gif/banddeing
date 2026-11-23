@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="theme-color" content="#F2643D">
+  <meta name="description" content="1인가구를 위한 동네 소분 공동구매 · 필요한 만큼만 이웃과 나눠 사요">
+  <title>{% block title %}반띵 · 동네 소분 공동구매{% endblock %}</title>
+  <link rel="icon" href="{{ url_for('static', filename='icon.svg') }}" type="image/svg+xml">
+  <link rel="manifest" href="{{ url_for('static', filename='manifest.webmanifest') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="app {% if not nav %}no-tab{% endif %}">
+  {% block header %}{% endblock %}
+  {% with msgs = get_flashed_messages() %}
+    {% for m in msgs %}<div class="flash" role="status">{{ m }}</div>{% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+  {% block bottom %}{% endblock %}
+  {% if nav %}
+  <nav class="tabbar" aria-label="주요 메뉴">
+    <a href="{{ url_for('home') }}" class="{% if nav == 'home' %}on{% endif %}"><span class="i">🏠</span>홈</a>
+    <a href="{{ url_for('map_view') }}" class="{% if nav == 'map' %}on{% endif %}"><span class="i">🗺️</span>지도</a>
+    <a href="{{ url_for('my') }}" class="{% if nav == 'my' %}on{% endif %}"><span class="i">🧺</span>내 공구</a>
+    <a href="{{ url_for('chats') }}" class="{% if nav == 'chat' %}on{% endif %}"><span class="i">💬</span>채팅</a>
+    <a href="{{ url_for('me') }}" class="{% if nav == 'me' %}on{% endif %}"><span class="i">🙂</span>마이</a>
+  </nav>
+  {% endif %}
+</div>
+<script nonce="{{ csp_nonce() }}">
+  document.querySelectorAll('.filepick input').forEach(i => i.addEventListener('change', () => {
+    const n = i.parentElement.querySelector('.fp-name');
+    n.textContent = i.files.length ? i.files[0].name : '선택된 사진 없음';
+    i.parentElement.classList.toggle('on', i.files.length > 0);
+  }));
+  // CSP 가 인라인 onclick/onsubmit 을 막으므로 data- 속성으로 처리한다
+  document.addEventListener('submit', e => {
+    const msg = e.target.dataset && e.target.dataset.confirm;
+    if (msg && !confirm(msg)) { e.preventDefault(); return; }
+    // 버튼을 두 번 눌러 같은 요청이 두 번 가지 않게 잠시 막는다
+    if (!e.defaultPrevented && e.target.method === 'post') {
+      if (e.target.dataset.sending) { e.preventDefault(); return; }
+      e.target.dataset.sending = '1';
+      setTimeout(() => { delete e.target.dataset.sending; }, 3000);
+    }
+  });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-back]');
+    if (b && history.length > 1) { e.preventDefault(); history.back(); }
+  });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

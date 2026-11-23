@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back, thumb %}
+{% block header %}{{ back('참여 신청') }}{% endblock %}
+{% block content %}
+<form method="post" id="f" class="body">{{ csrf_field() }}
+  <div class="card">{{ thumb(room) }}<div class="info"><div class="tt">{{ room.title }}</div>
+    <div class="muted small">{{ room.pickup_at|dt }} · {{ room.pickup_place }}</div></div></div>
+
+  <label class="lbl">참여 칸 수</label>
+  <div class="row">
+    <span class="muted">1칸 = {{ room.slot_qty|qty }}{{ room.unit }} · 남은 칸 {{ room.remaining }}</span>
+    <span class="stepper">
+      <button type="button" data-step="-1">−</button>
+      <input name="slots" id="slots" value="1" readonly>
+      <button type="button" data-step="1">＋</button>
+    </span>
+  </div>
+
+  <div class="box" style="margin-top:14px">
+    <div class="row"><span>결제 금액</span><b class="price" style="font-size:19px" id="amount">{{ room.slot_price|won }}</b></div>
+  </div>
+
+  <label class="lbl">입금 방법 (MVP)</label>
+  <div class="radio" style="cursor:default;border:1.5px solid var(--accent);background:#FFF8F5">
+    <div><b>방장 계좌로 송금</b><div class="muted small" id="bank">{{ room.host.bank }} ({{ room.host.nickname }})</div></div>
+    <button type="button" class="badge gray" style="border:0;cursor:pointer" id="copy-bank">복사</button>
+  </div>
+  <ul class="muted small" style="padding-left:18px;line-height:1.8">
+    <li>송금한 뒤 아래 버튼을 눌러 주세요.</li>
+    <li>모집이 끝나지 않으면 방장이 전액 돌려줘요.</li>
+    <li>칸이 다 찬 뒤 24시간 안에 입금하지 않으면 자리가 풀려요.</li>
+    <li>정식 버전에서는 안전결제(에스크로)로 바뀌어요.</li>
+  </ul>
+</form>
+{% endblock %}
+{% block bottom %}
+<div class="bottom">
+  <button class="btn" form="f" name="action" value="paid">송금했어요 · 입금 완료</button>
+  <button class="btn ghost sm" form="f" name="action" value="later" style="margin-top:8px">참여만 하고 입금은 나중에</button>
+</div>
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}">
+  const price = {{ room.slot_price }}, max = {{ room.remaining }};
+  function step(d) {
+    const el = document.getElementById('slots');
+    el.value = Math.min(max, Math.max(1, +el.value + d));
+    document.getElementById('amount').textContent = (price * el.value).toLocaleString('ko-KR') + '원';
+  }
+  function copyBank(b) {
+    navigator.clipboard?.writeText({{ room.host.bank|tojson }}).then(() => { b.textContent = '복사됨'; });
+  }
+  document.querySelectorAll('[data-step]').forEach(b => b.addEventListener('click', () => step(+b.dataset.step)));
+  document.getElementById('copy-bank').addEventListener('click', e => copyBank(e.currentTarget));
+</script>
+{% endblock %}

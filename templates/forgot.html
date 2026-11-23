@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block title %}비밀번호 찾기 · 반띵{% endblock %}
+{% block header %}{{ back('비밀번호 찾기', url_for('login')) }}{% endblock %}
+{% block content %}
+<div class="body">
+  {% if MAIL_ENABLED %}
+  <form method="post">
+    {{ csrf_field() }}
+    <p class="muted">가입한 이메일로 비밀번호 재설정 링크를 보내 드려요.</p>
+    <label class="lbl" for="email">이메일</label>
+    <input class="inp" id="email" name="email" type="email" autocomplete="email" required>
+    <button class="btn" style="margin-top:16px">재설정 링크 받기</button>
+  </form>
+  {% else %}
+    <div class="box">
+      비밀번호 재설정은 운영팀이 도와드려요.<br>
+      {% if SITE.contact %}<a class="u" href="mailto:{{ SITE.contact }}">{{ SITE.contact }}</a>로 가입한 이메일을 보내 주세요.
+      {% else %}운영팀에 문의해 주세요.{% endif %}
+    </div>
+  {% endif %}
+  {% if KAKAO_ENABLED %}<p class="muted small" style="margin-top:12px">카카오로 가입했다면 로그인 화면에서 ‘카카오로 시작하기’를 눌러 주세요.</p>{% endif %}
+</div>
+{% endblock %}

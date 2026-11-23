@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block title %}운영자 · 반띵{% endblock %}
+{% block header %}{{ back('운영자 화면', url_for('me')) }}{% endblock %}
+{% block content %}
+<div class="body">
+  <div class="btn-row small">
+    <div class="box" style="flex:1;text-align:center"><b>{{ counts.users }}</b><div class="muted small">회원</div></div>
+    <div class="box" style="flex:1;text-align:center"><b>{{ counts.rooms }}</b><div class="muted small">공구방</div></div>
+    <div class="box" style="flex:1;text-align:center"><b>{{ counts.done }}</b><div class="muted small">거래 완료</div></div>
+    <div class="box" style="flex:1;text-align:center"><b class="price">{{ counts.open_reports }}</b><div class="muted small">미처리 신고</div></div>
+  </div>
+
+  <div class="sec">신고</div>
+  {% for r in reports %}
+    <div class="ln" {% if r.resolved %}style="opacity:.5"{% endif %}>
+      <div class="row"><b>#{{ r.room_id }} {{ r.title }}</b><span class="muted small">{{ r.created_at|ago }} · {{ r.nickname }}</span></div>
+      <div class="small" style="white-space:pre-wrap;margin:4px 0">{{ r.body }}</div>
+      <div class="btn-row">
+        <a class="btn ghost sm" href="{{ url_for('chat', room_id=r.room_id) }}">채팅 보기</a>
+        {% if not r.resolved %}<form method="post" style="flex:1">{{ csrf_field() }}<input type="hidden" name="action" value="resolve"><input type="hidden" name="id" value="{{ r.id }}"><button class="btn sm">처리 완료</button></form>{% endif %}
+      </div>
+    </div>
+  {% else %}<div class="muted small">신고가 없어요.</div>{% endfor %}
+
+  <div class="sec">최근 공구방</div>
+  {% for r in rooms %}
+    <div class="ln row">
+      <a href="{{ url_for('room_detail', room_id=r.id) }}"><b>#{{ r.id }} {{ r.title }}</b><div class="muted small">{{ r.nickname }} · {{ STATUS[r.status][0] }} · {{ r.created_at|ago }}</div></a>
+      {% if r.status not in ('done','failed','canceled') %}
+      <form method="post" class="row" style="gap:4px" data-confirm="이 공구방을 취소할까요?">{{ csrf_field() }}
+        <input type="hidden" name="action" value="cancel_room"><input type="hidden" name="id" value="{{ r.id }}">
+        <input class="inp" name="reason" placeholder="사유" style="width:90px;height:34px">
+        <button class="badge gray" style="border:0;cursor:pointer;padding:8px">취소</button></form>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <div class="sec">회원</div>
+  <form method="get" class="composer"><input class="inp" name="q" value="{{ q }}" placeholder="닉네임 · 이메일 검색"><button class="btn sm ghost" style="width:72px">검색</button></form>
+  {% for u in users %}
+    <div class="ln row">
+      <div><b>{{ u.nickname }}</b> {% if u.banned %}<span class="badge orange">정지</span>{% endif %}{% if u.is_admin %}<span class="badge blue">운영자</span>{% endif %}
+        <div class="muted small">{{ u.email or u.provider }} · {{ u.neighborhood or '-' }} · 노쇼 {{ u.noshow }}</div></div>
+      {% if not u.is_admin %}
+      <form method="post">{{ csrf_field() }}<input type="hidden" name="action" value="{{ 'unban' if u.banned else 'ban' }}"><input type="hidden" name="id" value="{{ u.id }}">
+        <button class="badge {{ 'green' if u.banned else 'gray' }}" style="border:0;cursor:pointer;padding:8px">{{ '정지 해제' if u.banned else '이용 정지' }}</button></form>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <div class="sec">상점 공식 공구 등록</div>
+  <form method="post" class="stack">{{ csrf_field() }}<input type="hidden" name="action" value="add_shop">
+    <input class="inp" name="owner" placeholder="사장님 닉네임 (가입 후)" required>
+    <input class="inp" name="name" placeholder="상점 이름" required>
+    <div class="btn-row"><input class="inp" name="kind" placeholder="업종 (정육, 청과…)"><input class="inp" name="hours" placeholder="픽업 시간 안내"></div>
+    <div class="btn-row"><input class="inp" name="lat" placeholder="위도 37.5…" required><input class="inp" name="lng" placeholder="경도 127.0…" required></div>
+    <button class="btn sm">상점 등록</button>
+  </form>
+
+  <div class="sec">추천 픽업 장소 추가</div>
+  <form method="post" class="stack">{{ csrf_field() }}<input type="hidden" name="action" value="add_place">
+    <input class="inp" name="name" placeholder="예) GS25 회기역점 앞" required>
+    <div class="btn-row"><input class="inp" name="lat" placeholder="위도" required><input class="inp" name="lng" placeholder="경도" required></div>
+    <button class="btn sm ghost">장소 추가</button>
+  </form>
+  <p class="muted small" style="margin-top:8px">좌표는 지도 앱에서 장소를 길게 눌러 복사할 수 있어요.</p>
+</div>
+{% endblock %}

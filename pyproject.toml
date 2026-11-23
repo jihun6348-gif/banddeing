@@ -1,0 +1,13 @@
+[project]
+name = "banddeing"
+version = "1.0.0"
+description = "반띵 - 1인가구 동네 소분 공동구매 웹 서비스"
+requires-python = ">=3.10"
+dependencies = [
+    "flask>=3.0,<4",
+    "pillow>=10.3",
+    "gunicorn>=22.0; sys_platform != 'win32'",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]

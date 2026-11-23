@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back, agreements %}
+{% block title %}회원가입 · 반띵{% endblock %}
+{% block header %}{{ back('회원가입', url_for('login', next=nxt)) }}{% endblock %}
+{% block content %}
+<form method="post" id="f" class="body">
+  {{ csrf_field() }}
+  <input type="hidden" name="next" value="{{ nxt }}">
+  {% if shared %}<div class="box" style="margin-bottom:6px">가입하면 <b>‘{{ shared.title }}’</b> 공구방으로 바로 이동해요</div>{% endif %}
+  <label class="lbl" for="email">이메일</label>
+  <input class="inp" id="email" name="email" type="email" value="{{ f.email }}" autocomplete="email" required>
+  <label class="lbl" for="password">비밀번호 <span class="muted">(영문+숫자 8자 이상)</span></label>
+  <input class="inp" id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+  <label class="lbl" for="password2">비밀번호 확인</label>
+  <input class="inp" id="password2" name="password2" type="password" autocomplete="new-password" minlength="8" required>
+  <label class="lbl" for="nickname">닉네임 <span class="muted">(한글·영문·숫자 2~12자, 이웃에게 보여요)</span></label>
+  <input class="inp" id="nickname" name="nickname" value="{{ f.nickname }}" maxlength="12" required>
+  <div style="margin-top:18px">{{ agreements(f) }}</div>
+</form>
+{% endblock %}
+{% block bottom %}<div class="bottom"><button class="btn" form="f">가입하고 동네 설정하기</button></div>{% endblock %}

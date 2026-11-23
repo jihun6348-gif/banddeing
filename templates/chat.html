@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block header %}{{ back(room.title ~ ' · ' ~ (members|length + 1) ~ '명', url_for('my')) }}{% endblock %}
+{% block content %}
+<div class="notice" id="notice" {% if not room.notice %}hidden{% endif %}>📌 <b>공지</b> <span id="notice-text">{{ room.notice or '' }}</span></div>
+{% if room.is_host %}
+<details class="body" style="padding-bottom:0">
+  <summary class="muted small" style="cursor:pointer">공지 등록 · 수정</summary>
+  <form method="post" action="{{ url_for('set_notice', room_id=room.id) }}" class="composer" style="margin-top:8px">{{ csrf_field() }}
+    <input class="inp" name="notice" value="{{ room.notice or '' }}" maxlength="100" placeholder="예) 금요일 19시 GS25 앞! 에코백 챙겨 오세요">
+    <button class="btn sm" style="width:72px">등록</button>
+  </form>
+</details>
+{% endif %}
+<div class="msgs" id="msgs"></div>
+{% endblock %}
+{% block bottom %}
+<form class="bottom composer" id="send">
+  <input class="inp" id="body" placeholder="메시지 입력" autocomplete="off" maxlength="500">
+  <button class="btn sm" style="width:72px">전송</button>
+</form>
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}">
+  const url = {{ url_for('messages', room_id=room.id)|tojson }};
+  const box = document.getElementById('msgs');
+  let last = 0;
+  function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+  function render(list) {
+    for (const m of list) {
+      last = m.id;
+      if (m.system) { box.insertAdjacentHTML('beforeend', `<div class="sys">— ${esc(m.body)} —</div>`); continue; }
+      const name = m.mine ? '' : `<div class="msg-name">${esc(m.nickname)}</div>`;
+      box.insertAdjacentHTML('beforeend', m.mine
+        ? `<div class="msg-wrap mine"><span class="msg-time">${m.time}</span><div class="msg">${esc(m.body)}</div></div>`
+        : `<div>${name}<div class="msg-wrap"><div class="msg">${esc(m.body)}</div><span class="msg-time">${m.time}</span></div></div>`);
+    }
+    if (list.length) window.scrollTo(0, document.body.scrollHeight);
+  }
+  async function poll(opts) {
+    const r = await fetch(url + '?after=' + last, opts);
+    if (!r.ok) return;
+    const data = await r.json();
+    render(data.messages);
+    document.getElementById('notice').hidden = !data.notice;
+    document.getElementById('notice-text').textContent = data.notice || '';
+  }
+  document.getElementById('send').onsubmit = e => {
+    e.preventDefault();
+    const input = document.getElementById('body'), body = input.value.trim();
+    if (!body) return;
+    input.value = '';
+    poll({ method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': document.querySelector('meta[name=csrf-token]').content }, body: JSON.stringify({ body }) });
+  };
+  poll(); setInterval(() => { if (!document.hidden) poll(); }, 3000);
+</script>
+{% endblock %}

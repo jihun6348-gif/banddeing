@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block header %}{{ back('상점 공식 공구', url_for('home')) }}{% endblock %}
+{% block content %}
+<div class="body">
+  <p class="muted" style="margin-bottom:12px">동네 가게가 직접 여는 공구방 · 가게에서 바로 픽업하고, 소분·위생은 상점이 책임져요.</p>
+  <div class="stack">
+  {% for s in shops %}
+    <div class="card" style="display:block">
+      <div class="row">
+        <div class="row" style="gap:10px;justify-content:flex-start">
+          <div class="av" style="border-radius:10px">{{ '🥩' if s.kind == '정육' else '🍎' }}</div>
+          <div><b>{{ s.name }}</b> <span class="badge blue">공식</span>
+            <div class="muted small">{{ s.dist|meters }} · {{ s.hours }}</div></div>
+        </div>
+      </div>
+      {% for r in s.rooms %}
+        <a class="ln row" href="{{ url_for('room_detail', room_id=r.id) }}" style="display:flex">
+          <span>{{ r.title }} → {{ r.slot_qty|qty }}{{ r.unit }}씩 <span class="muted small">(남은 {{ r.remaining }}칸)</span></span>
+          <b class="price">{{ r.slot_price|won }}</b>
+        </a>
+      {% else %}
+        <div class="ln muted small">지금 열린 공구가 없어요</div>
+      {% endfor %}
+    </div>
+  {% endfor %}
+  </div>
+  <p class="muted small" style="margin-top:12px">상점 사장님 계정으로 로그인하면 ‘방 만들기’에서 상점 공식 공구로 열 수 있어요.</p>
+</div>
+{% endblock %}

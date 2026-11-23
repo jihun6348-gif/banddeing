@@ -1,0 +1,49 @@
+# Render 블루프린트 — GitHub 저장소를 연결하면 이 설정대로 서버가 만들어진다.
+services:
+  - type: web
+    name: banddeing
+    runtime: python
+    region: singapore          # 한국과 가장 가까운 지역
+    # 무료 플랜: 영구 디스크가 없어서 재시작·재배포하면 DB와 사진이 지워진다 (시연용).
+    # 데이터를 유지하려면 plan: starter 로 바꾸고 아래 disk 블록 주석을 풀고 DATA_DIR 을 /var/data 로 바꾼다.
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn -c gunicorn.conf.py app:app
+    healthCheckPath: /healthz
+    # disk:
+    #   name: banddeing-data
+    #   mountPath: /var/data
+    #   sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: APP_ENV
+        value: production
+      - key: DATA_DIR
+        value: /tmp/banddeing-data
+      - key: SECRET_KEY
+        generateValue: true
+      - key: OPERATOR_NAME
+        sync: false
+      - key: CONTACT_EMAIL
+        sync: false
+      - key: PRIVACY_OFFICER
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: PUBLIC_URL
+        sync: false
+      - key: KAKAO_REST_API_KEY
+        sync: false
+      - key: KAKAO_CLIENT_SECRET
+        sync: false
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false

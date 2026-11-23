@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% from "_macros.html" import footer_links with context %}
+{% block title %}마이 · 반띵{% endblock %}
+{% block header %}<header class="hdr"><div class="t">마이</div>
+  <a class="icon-btn" href="{{ url_for('notifications') }}" aria-label="알림">🔔{% if unread %}<span class="dot">{{ unread }}</span>{% endif %}</a></header>{% endblock %}
+{% block content %}
+<div class="body">
+  <div class="row" style="gap:12px;justify-content:flex-start">
+    <div class="av lg">{{ me.nickname[0] }}</div>
+    <div><div style="font-size:18px;font-weight:700">{{ me.nickname }} {% if me.school_verified %}<span class="badge blue">학교 인증</span>{% endif %}</div>
+      <div class="muted">{{ me.neighborhood }} · 거래 {{ stats.deals }}회</div></div>
+  </div>
+
+  <div class="box" style="margin-top:16px">
+    <div class="row"><span>신뢰도</span><b class="price" style="font-size:19px">{{ stats.score }}점</b></div>
+    <div class="bar"><i style="width: {{ stats.score }}%"></i></div>
+    <div class="muted small" style="margin-top:6px">약속 이행 {{ stats.kept }}/{{ stats.kept + stats.noshow }} · 받은 좋은 후기 {{ stats.good }}{% if stats.bad %} · 아쉬운 후기 {{ stats.bad }}{% endif %}</div>
+  </div>
+  <div class="box green" style="margin-top:10px">
+    <div class="muted small">이번 달 반띵으로</div>
+    <div style="font-size:19px;font-weight:800;color:var(--green)">{{ stats.saved|won }} 아꼈어요</div>
+    <div class="muted small">소포장 가격 대비 · 나눠 받은 {{ stats.shared }}칸</div>
+  </div>
+
+  {% if reviews %}
+  <div class="sec">받은 후기</div>
+  {% for r in reviews %}
+    <div class="ln"><b>{{ r.nickname }}</b> <span class="muted small">{{ r.created_at|ago }}</span>
+      <div class="small">{% for t in r.good.split(',') if t %}<span class="badge green" style="margin:2px 2px 0 0">{{ t }}</span>{% endfor %}
+        {% for t in r.bad.split(',') if t %}<span class="badge gray" style="margin:2px 2px 0 0">{{ t }}</span>{% endfor %}</div>
+      {% if r.comment %}<div class="small" style="margin-top:4px">“{{ r.comment }}”</div>{% endif %}</div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="sec">관심 품목 알림</div>
+  <form method="post" class="composer">{{ csrf_field() }}
+    <input type="hidden" name="action" value="watch">
+    <input class="inp" name="watch" value="{{ me.watch }}" maxlength="100" placeholder="예) 양파, 계란, 두부 (쉼표로 구분)">
+    <button class="btn sm" style="width:72px">저장</button>
+  </form>
+
+  <div class="sec">송금 계좌 <span class="muted small">내 방 참여자에게만 보여요</span></div>
+  <form method="post" class="composer">{{ csrf_field() }}
+    <input type="hidden" name="action" value="bank">
+    <input class="inp" name="bank" value="{{ me.bank or '' }}" maxlength="60" placeholder="예) 국민 123-45-678901 홍길동">
+    <button class="btn sm" style="width:72px">저장</button>
+  </form>
+
+  <div style="margin-top:16px">
+    <a class="ln row" href="{{ url_for('my', tab='done') }}"><span>거래 내역</span><span class="muted">›</span></a>
+    <a class="ln row" href="{{ url_for('neighborhood') }}"><span>동네 · 학교 인증</span><span class="muted">{{ me.neighborhood }} ›</span></a>
+    <a class="ln row" href="{{ url_for('shops') }}"><span>상점 공식 공구</span><span class="muted">›</span></a>
+    {% if me.is_admin %}<a class="ln row" href="{{ url_for('admin') }}"><span><b>운영자 화면</b></span><span class="muted">›</span></a>
+    {% elif admin_candidate() %}
+    <details class="ln" {% if request.args.admin_code %}open{% endif %}>
+      <summary style="cursor:pointer"><b>운영자 이메일 인증</b></summary>
+      {% if MAIL_ENABLED %}
+        <p class="muted small" style="margin:8px 0">운영자 이메일로 받은 인증번호를 입력해야 운영자 화면이 열려요.</p>
+        <form method="post" action="{{ url_for('admin_verify_send') }}">{{ csrf_field() }}
+          <button class="btn ghost sm">인증번호 받기</button></form>
+        <form method="post" action="{{ url_for('admin_verify_confirm') }}" class="row" style="gap:8px;margin-top:8px">{{ csrf_field() }}
+          <input class="inp" name="code" inputmode="numeric" maxlength="6" placeholder="인증번호 6자리" required>
+          <button class="btn sm" style="width:72px">확인</button></form>
+      {% else %}
+        <p class="muted small" style="margin-top:8px">메일 설정이 없어서 서버에서 인증해야 해요. 서버 Shell에서
+          <code>flask --app app verify-admin {{ me.email }}</code> 를 실행한 뒤 새로고침하세요.</p>
+      {% endif %}
+    </details>
+    {% endif %}
+    {% if me.password_hash %}
+    <details class="ln">
+      <summary style="cursor:pointer">비밀번호 변경</summary>
+      <form method="post" class="stack" style="margin-top:10px">{{ csrf_field() }}
+        <input type="hidden" name="action" value="password">
+        <input class="inp" name="current" type="password" autocomplete="current-password" placeholder="현재 비밀번호" required>
+        <input class="inp" name="password" type="password" autocomplete="new-password" minlength="8" placeholder="새 비밀번호 (영문+숫자 8자 이상)" required>
+        <input class="inp" name="password2" type="password" autocomplete="new-password" minlength="8" placeholder="새 비밀번호 확인" required>
+        <button class="btn sm">변경</button>
+      </form>
+    </details>
+    {% endif %}
+    <form method="post" action="{{ url_for('logout') }}" class="ln">{{ csrf_field() }}<button class="link-btn">로그아웃</button></form>
+    <a class="ln row muted" href="{{ url_for('account_delete') }}"><span>회원 탈퇴</span><span>›</span></a>
+  </div>
+</div>
+{{ footer_links() }}
+{% endblock %}

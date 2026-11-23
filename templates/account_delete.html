@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block title %}회원 탈퇴 · 반띵{% endblock %}
+{% block header %}{{ back('회원 탈퇴', url_for('me')) }}{% endblock %}
+{% block content %}
+<div class="body">
+  {% if active %}
+    <div class="box">진행 중인 거래가 있어서 지금은 탈퇴할 수 없어요. 거래가 끝난 뒤 다시 시도해 주세요.</div>
+    <div class="stack" style="margin-top:10px">
+      {% for r in active %}<a class="ln row" href="{{ url_for('room_detail', room_id=r.id) }}"><span>{{ r.title }}</span><span class="muted">›</span></a>{% endfor %}
+    </div>
+  {% else %}
+  <form method="post" class="stack" data-confirm="정말 탈퇴할까요? 되돌릴 수 없어요.">{{ csrf_field() }}
+    <div class="box gray small" style="line-height:1.8">
+      · 이메일·비밀번호·위치·계좌·학교 이메일은 바로 지워져요.<br>
+      · 모집 중인 내 공구방은 닫히고, 다른 이웃이 남긴 채팅·후기 속 닉네임은 ‘탈퇴회원’으로 바뀌어요.<br>
+      · 신고 처리와 분쟁 대응을 위해 거래 기록(방 제목·금액·일시)은 <a class="u" href="{{ url_for('privacy') }}">개인정보처리방침</a>에 적힌 기간 동안 보관돼요.
+    </div>
+    {% if me.password_hash %}
+      <label class="lbl" for="password">비밀번호 확인</label>
+      <input class="inp" id="password" name="password" type="password" autocomplete="current-password" required>
+    {% else %}
+      <label class="lbl" for="confirm">확인을 위해 <b>탈퇴</b>라고 입력해 주세요</label>
+      <input class="inp" id="confirm" name="confirm" required>
+    {% endif %}
+    <button class="btn" style="background:#6B6460">탈퇴하기</button>
+  </form>
+  {% endif %}
+</div>
+{% endblock %}

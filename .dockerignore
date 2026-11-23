@@ -1,0 +1,11 @@
+.venv
+__pycache__
+*.pyc
+*.db
+*.db-*
+.secret_key
+uploads
+tests
+_backup_mvp
+.env
+logs

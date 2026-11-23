@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block title %}{{ room.title }} · 반띵{% endblock %}
+{% block header %}{{ back(room.title, url_for('home')) }}{% endblock %}
+{% block content %}
+{% if room.photo %}<img class="hero-img" src="{{ url_for('public_upload', name=room.photo) }}" alt="{{ room.title }} 상품 사진">
+{% else %}<div class="hero-img" style="background:var(--accent-soft)">{{ room.cat.icon }}</div>{% endif %}
+<div class="body">
+  <div class="row">
+    <span class="badge {{ room.status_color }}">{{ room.status_label }}{% if room.status == 'recruiting' %} · {{ room.deadline|left }}{% endif %}</span>
+    <span class="muted small">조회 {{ room.views }}</span>
+  </div>
+  <h1 style="font-size:21px;margin-top:8px">{{ room.title }}</h1>
+  {% if room.cancel_reason %}<div class="box gray small" style="margin:8px 0">취소 사유: {{ room.cancel_reason }}</div>{% endif %}
+  <div class="muted">구매처: {{ room.buy_from or '미정' }} · 총 {{ room.total_price|won }}</div>
+
+  <div class="box" style="margin-top:14px">
+    <div class="row"><span>소분 단위</span><b>{{ room.slot_qty|qty }}{{ room.unit }} × {{ room.slot_count }}칸</b></div>
+    <div class="row" style="margin-top:6px"><span>1칸 가격</span><b class="price" style="font-size:18px">{{ room.slot_price|won }}</b></div>
+    {% if room.ref_price %}<div class="row small muted" style="margin-top:2px"><span>소포장으로 사면</span><span>{{ room.ref_price|won }} → {{ (room.ref_price - room.slot_price)|won }} 절약</span></div>{% endif %}
+    <div class="bar"><i style="width: {{ (room.taken / room.slot_count * 100)|round|int }}%"></i></div>
+    <div class="muted small" style="margin-top:4px">{{ room.slot_count }}칸 중 {{ room.taken }}칸 마감 · {{ room.remaining }}칸 남음</div>
+  </div>
+
+  <div class="ln row" style="margin-top:6px"><span class="muted">픽업 장소</span><b>{{ room.pickup_place }}</b></div>
+  <div class="ln row"><span class="muted">픽업 시간</span><b>{{ room.pickup_at|dt }}</b></div>
+  <div class="ln row"><span class="muted">모집 마감</span><b>{{ room.deadline|dt }}</b></div>
+  {% if room.dist is not none %}<div class="ln row"><span class="muted">내 위치에서</span><b>{{ room.dist|meters }}</b></div>{% endif %}
+
+  <div class="row" style="margin-top:14px;gap:10px;justify-content:flex-start">
+    <div class="av">{{ room.host.nickname[0] }}</div>
+    <div style="flex:1"><b>{{ room.shop.name if room.shop else room.host.nickname }}</b>
+      {% if room.shop %}<span class="badge blue">상점 공식</span>{% elif room.host.school_verified %}<span class="badge blue">학교 인증</span>{% endif %}
+      <div class="muted small">거래 {{ stats.deals }}회 · 받은 좋은 후기 {{ stats.good }}</div></div>
+    <b class="price">신뢰도 {{ stats.score }}</b>
+  </div>
+
+  {% if room.is_host and room.status == 'recruiting' %}
+  <div style="margin-top:16px;display:flex;gap:14px;align-items:center">
+    <a class="link-btn muted small" href="{{ url_for('room_update', room_id=room.id) }}">공구방 수정</a>
+    {% if room.taken == room.host_slots %}
+      {# 참여자가 없으면 완전히 지울 수 있다 (삭제는 POST 로만) #}
+      <form method="post" action="{{ url_for('room_delete', room_id=room.id) }}"
+            data-confirm="이 공구방을 삭제할까요? 되돌릴 수 없어요.">{{ csrf_field() }}
+        <button class="link-btn muted small">공구방 삭제</button></form>
+    {% else %}
+      <form method="post" action="{{ url_for('host_cancel', room_id=room.id) }}"
+            data-confirm="이 공구방을 닫을까요? 참여한 이웃에게 알림이 가요.">{{ csrf_field() }}
+        <button class="link-btn muted small">공구방 닫기</button></form>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% if not room.is_host %}
+  <details style="margin-top:16px">
+    <summary class="muted small" style="cursor:pointer">이 공구방 신고하기</summary>
+    <form method="post" action="{{ url_for('report', room_id=room.id) }}" style="margin-top:8px">{{ csrf_field() }}
+      <textarea class="inp" name="body" maxlength="1000" placeholder="예) 판매 금지 품목이에요 / 거래 원칙을 지키지 않았어요" required></textarea>
+      <button class="btn ghost sm" style="margin-top:8px">신고 접수</button></form>
+  </details>
+  {% endif %}
+</div>
+{% endblock %}
+{% block bottom %}
+<div class="bottom">
+  {% if room.is_host %}
+    <div class="btn-row">
+      <a class="btn ghost" href="{{ url_for('chat', room_id=room.id) }}">채팅</a>
+      <a class="btn" href="{{ url_for('my', tab='host') }}">내 공구에서 관리</a>
+    </div>
+  {% elif room.mine %}
+    <div class="btn-row">
+      <a class="btn ghost" href="{{ url_for('chat', room_id=room.id) }}">채팅</a>
+      {% if not room.mine.paid and room.status in ('recruiting', 'deposit') %}
+        <form method="post" action="{{ url_for('mark_paid', room_id=room.id) }}" style="flex:1">{{ csrf_field() }}<input type="hidden" name="next" value="{{ url_for('room_detail', room_id=room.id) }}"><button class="btn">입금 완료 표시</button></form>
+      {% elif room.status in ('pickup', 'done') %}
+        <a class="btn" href="{{ url_for('pickup', room_id=room.id) }}">픽업 화면</a>
+      {% else %}
+        <a class="btn" href="{{ url_for('my', tab='join') }}">참여 중 · {{ room.mine.slots }}칸</a>
+      {% endif %}
+    </div>
+    {% if not room.mine.paid and room.status in ('recruiting', 'deposit') %}
+      <form method="post" action="{{ url_for('leave', room_id=room.id) }}" style="text-align:center;margin-top:8px">{{ csrf_field() }}
+        <button class="link-btn muted small">참여 취소</button></form>
+    {% endif %}
+  {% elif room.status == 'recruiting' and room.remaining > 0 %}
+    <a class="btn" href="{{ url_for('join', room_id=room.id) }}">1칸 참여하기</a>
+  {% else %}
+    <button class="btn" disabled>모집이 끝났어요</button>
+  {% endif %}
+</div>
+{% endblock %}

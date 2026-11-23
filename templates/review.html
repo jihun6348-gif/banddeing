@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{# 후기 쓰기와 수정에 같은 화면을 쓴다. record 가 있으면 수정 모드 (수업 자료의 write.html 재사용과 같은 방식) #}
+{% block header %}{{ back('후기 수정' if record else '거래 후기') }}{% endblock %}
+{% block content %}
+<form method="post" id="f" class="body">{{ csrf_field() }}
+  <div style="text-align:center">
+    <div class="av lg" style="margin:8px auto">{{ target.nickname[0] }}</div>
+    <div style="font-size:17px;font-weight:700">{{ target.nickname }}님과의 반띵, 어땠나요?</div>
+    <div class="muted">{{ room.title }} · {{ room.pickup_at|dt }}</div>
+  </div>
+  <label class="lbl">좋았던 점 (여러 개 선택)</label>
+  <div class="chips" style="flex-wrap:wrap">
+    {% for t in good_tags %}<label class="chip"><input type="checkbox" name="good" value="{{ t }}" {% if record and t in good %}checked{% endif %}>{{ t }}</label>{% endfor %}
+  </div>
+  <label class="lbl">아쉬웠던 점</label>
+  <div class="chips" style="flex-wrap:wrap">
+    {% for t in bad_tags %}<label class="chip"><input type="checkbox" name="bad" value="{{ t }}" {% if record and t in bad %}checked{% endif %}>{{ t }}</label>{% endfor %}
+  </div>
+  <label class="lbl" for="comment">한 줄 후기 <span class="muted">(선택)</span></label>
+  <textarea class="inp" id="comment" name="comment" maxlength="100" placeholder="다음에도 같이 사요!">{{ record.comment or '' if record else '' }}</textarea>
+  <div class="box gray small" style="margin-top:12px">이웃의 신뢰도는 후기와 약속 이행률로 계산돼요.{% if record %} 후기는 남긴 뒤 7일 안에만 고칠 수 있어요.{% endif %}</div>
+</form>
+{% endblock %}
+{% block bottom %}<div class="bottom">
+  {% if record %}
+    <div class="btn-row">
+      <button type="button" class="btn ghost" data-back style="width:110px;flex:none">취소</button>
+      <button class="btn" form="f">수정 저장</button>
+    </div>
+  {% else %}<button class="btn" form="f">후기 남기기</button>{% endif %}
+</div>{% endblock %}

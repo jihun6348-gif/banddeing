@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block title %}새 비밀번호 · 반띵{% endblock %}
+{% block header %}{{ back('새 비밀번호', url_for('login')) }}{% endblock %}
+{% block content %}
+<form method="post" class="body">
+  {{ csrf_field() }}
+  <label class="lbl" for="password">새 비밀번호 <span class="muted">(영문+숫자 8자 이상)</span></label>
+  <input class="inp" id="password" name="password" type="password" autocomplete="new-password" minlength="8" required>
+  <label class="lbl" for="password2">새 비밀번호 확인</label>
+  <input class="inp" id="password2" name="password2" type="password" autocomplete="new-password" minlength="8" required>
+  <button class="btn" style="margin-top:16px">비밀번호 바꾸기</button>
+</form>
+{% endblock %}

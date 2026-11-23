@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_macros.html" import room_card %}
+{% block header %}
+<header class="hdr">
+  <a class="t" href="{{ url_for('neighborhood') }}">{{ me.neighborhood }} ▾</a>
+  {% if has_shops %}<a class="icon-btn" href="{{ url_for('shops') }}" aria-label="상점 공식 공구" title="상점 공식 공구">🏪</a>{% endif %}
+  <a class="icon-btn" href="{{ url_for('notifications') }}" aria-label="알림">🔔{% if unread %}<span class="dot">{{ unread }}</span>{% endif %}</a>
+</header>
+{% endblock %}
+{% block content %}
+<div class="body" style="padding-top:12px">
+  <form method="get" class="stack">
+    <input class="inp" name="q" value="{{ q }}" placeholder="🔍 계란, 양파, 휴지 검색">
+    <div class="chips">
+      <a class="chip {% if not cat %}on{% endif %}" href="{{ url_for('home', q=q, sort=sort) }}">전체</a>
+      {% for k, n, i in CATEGORIES %}
+        <a class="chip {% if cat == k %}on{% endif %}" href="{{ url_for('home', q=q, cat=k, sort=sort) }}">{{ i }} {{ n }}</a>
+      {% endfor %}
+    </div>
+  </form>
+
+  {% if has_shops %}  <a class="box row" href="{{ url_for('shops') }}" style="margin-top:14px;background:var(--blue-soft)">
+    <span><b>🏪 상점 공식 공구</b><br><span class="small" style="color:#374151">동네 가게가 연 공구 · 가게에서 바로 수령</span></span>
+    <span>›</span>
+  </a>{% endif %}
+
+  <div class="sec">
+    <span>{{ '거리순' if sort == 'distance' else '마감 임박' }} · 반경 {{ me.radius|meters }}</span>
+    <a class="muted" href="{{ url_for('home', q=q, cat=cat, sort='deadline' if sort == 'distance' else 'distance') }}">
+      {{ '마감순으로' if sort == 'distance' else '거리순으로' }} ⇅</a>
+  </div>
+  <div class="stack">
+    {% for r in rooms %}{{ room_card(r) }}{% else %}
+      <div class="empty"><div class="e">🧺</div>{% if q or cat %}조건에 맞는 공구방이 없어요.{% else %}근처에 열린 공구방이 아직 없어요.<br>첫 공구방을 열어 이웃을 모아 보세요!{% endif %}
+        <div style="margin-top:12px">{% if not show_all %}<a class="chip" href="{{ url_for('home', all=1) }}">반경 밖 공구방도 보기</a>{% endif %}
+          <a class="chip on" href="{{ url_for('new_room') }}">+ 방 만들기</a></div></div>
+    {% endfor %}
+  </div>
+</div>
+<a class="fab" href="{{ url_for('new_room') }}">+ 방 만들기</a>
+{% endblock %}

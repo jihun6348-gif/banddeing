@@ -1,0 +1,57 @@
+{% macro back(title, href=None) -%}
+<header class="hdr">
+  <a class="icon-btn" href="{{ href or url_for('index') }}" {% if not href %}data-back{% endif %} aria-label="뒤로">←</a>
+  <div class="t">{{ title }}</div>
+</header>
+{%- endmacro %}
+
+{% macro thumb(room) -%}
+<div class="thumb">
+  {% if room.photo %}<img src="{{ url_for('public_upload', name=room.photo) }}" alt="{{ room.title }} 사진" loading="lazy">
+  {% else %}{{ room.cat.icon }}{% endif %}
+</div>
+{%- endmacro %}
+
+{% macro room_card(room, sub=None) -%}
+<a class="card" href="{{ url_for('room_detail', room_id=room.id) }}">
+  {{ thumb(room) }}
+  <div class="info">
+    <div class="row">
+      <div class="tt">{{ room.title }}</div>
+      {% if room.shop %}<span class="badge blue">상점 공식</span>
+      {% elif room.status == 'recruiting' %}<span class="badge orange">{{ room.deadline|left }}</span>{% endif %}
+    </div>
+    <div><span class="price">{{ room.slot_price|won }}</span> <span class="muted">/ 1칸 ({{ room.slot_qty|qty }}{{ room.unit }})</span></div>
+    <div class="muted small">{{ sub or (room.pickup_place ~ (' · ' ~ (room.dist|meters) if room.dist is not none else '')) }}</div>
+    <div class="bar"><i style="width: {{ (room.taken / room.slot_count * 100)|round|int }}%"></i></div>
+    <div class="muted small" style="margin-top:3px">{{ room.taken }}/{{ room.slot_count }}칸 · 남은 {{ room.remaining }}칸</div>
+  </div>
+</a>
+{%- endmacro %}
+
+{% macro agreements(f) -%}
+<div class="agree">
+  <label class="row chk-all"><input type="checkbox" id="agree-all"><b>모두 동의</b></label>
+  <label class="row"><input type="checkbox" name="agree_age" value="1" {% if f.agree_age %}checked{% endif %}><span>(필수) 만 14세 이상이에요</span></label>
+  <label class="row"><input type="checkbox" name="agree_terms" value="1" {% if f.agree_terms %}checked{% endif %}><span>(필수) <a href="{{ url_for('terms') }}" target="_blank" class="u">이용약관</a> 동의</span></label>
+  <label class="row"><input type="checkbox" name="agree_privacy" value="1" {% if f.agree_privacy %}checked{% endif %}><span>(필수) <a href="{{ url_for('privacy') }}" target="_blank" class="u">개인정보 수집·이용</a> 동의</span></label>
+  <label class="row"><input type="checkbox" name="agree_location" value="1" {% if f.agree_location %}checked{% endif %}><span>(필수) 위치정보 이용 동의 <span class="muted small">(내 동네 공구방 찾기)</span></span></label>
+</div>
+<script nonce="{{ csp_nonce() }}">
+  (() => {
+    const all = document.getElementById('agree-all');
+    const boxes = [...document.querySelectorAll('.agree input[name^=agree_]')];
+    const sync = () => { all.checked = boxes.every(b => b.checked); };
+    all.onchange = () => { boxes.forEach(b => { b.checked = all.checked; }); };
+    boxes.forEach(b => b.addEventListener('change', sync)); sync();
+  })();
+</script>
+{%- endmacro %}
+
+{% macro footer_links() -%}
+<div class="foot muted small">
+  <a href="{{ url_for('terms') }}">이용약관</a> · <a href="{{ url_for('privacy') }}"><b>개인정보처리방침</b></a>
+  {% if SITE.contact %} · <a href="mailto:{{ SITE.contact }}">문의</a>{% endif %}
+  <div>© {{ SITE.operator }}</div>
+</div>
+{%- endmacro %}

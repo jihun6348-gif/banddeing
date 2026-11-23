@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block head %}<link rel="stylesheet" href="{{ url_for('static', filename='leaflet/leaflet.css') }}">{% endblock %}
+{% block header %}
+<header class="hdr">
+  <div class="t">지도로 보기</div>
+  <a class="muted" href="{{ url_for('home') }}">목록 ☰</a>
+</header>
+{% endblock %}
+{% block content %}
+<div id="map"></div>
+<div class="sheet" id="sheet" hidden>
+  <a class="card" id="sheet-card" href="#" style="border:0;padding:0">
+    <div class="thumb" id="s-icon"></div>
+    <div class="info">
+      <div class="row"><div class="tt" id="s-title"></div><span class="badge" id="s-badge"></span></div>
+      <div><span class="price" id="s-price"></span> <span class="muted">/ 1칸</span></div>
+      <div class="muted small" id="s-place"></div>
+      <div class="bar"><i id="s-bar"></i></div>
+    </div>
+  </a>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='leaflet/leaflet.js') }}"></script>
+<script nonce="{{ csp_nonce() }}">
+  const pins = {{ pins|tojson }};
+  const me = [{{ me.lat }}, {{ me.lng }}];
+  const map = L.map('map', { zoomControl: false }).setView(me, 16);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+  L.circle(me, { radius: {{ me.radius }}, color: '#F2643D', weight: 1.5, dashArray: '6 6', fillOpacity: 0.05 }).addTo(map);
+  L.marker(me, { icon: L.divIcon({ className: '', html: '<div class="me-pin"></div>', iconSize: [16, 16] }) }).addTo(map);
+  const $ = id => document.getElementById(id);
+  pins.forEach(p => {
+    const icon = L.divIcon({ className: '', html: `<div class="pin ${p.official ? 'shop' : ''}">${p.icon} ${p.price}</div>`, iconSize: null });
+    L.marker([p.lat, p.lng], { icon }).addTo(map).on('click', () => {
+      $('sheet').hidden = false;
+      $('sheet-card').href = '/rooms/' + p.id;
+      $('s-icon').textContent = p.icon; $('s-title').textContent = p.title; $('s-price').textContent = p.price;
+      $('s-place').textContent = `픽업 ${p.place} · ${p.dist}`;
+      $('s-badge').textContent = p.official ? '상점 공식' : p.left;
+      $('s-badge').className = 'badge ' + (p.official ? 'blue' : 'orange');
+      $('s-bar').style.width = (p.taken / p.count * 100) + '%';
+    });
+  });
+  map.on('click', () => { $('sheet').hidden = true; });
+</script>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="slides" id="slides">
+  <section class="slide">
+    <div class="illu">🥚🥚🥚</div>
+    <h1 style="font-size:26px;font-weight:800;margin-top:28px;line-height:1.35">30구 말고 10구.<br>나머지는 옆 건물 이웃이.</h1>
+    <p class="muted" style="font-size:15px;margin-top:10px">동네 이웃과 대용량을 나눠 사고<br>딱 내 몫만 가져가세요.</p>
+  </section>
+  <section class="slide">
+    <div class="illu">📍🚶</div>
+    <h1 style="font-size:26px;font-weight:800;margin-top:28px;line-height:1.35">걸어서 5분,<br>공개 장소에서 픽업</h1>
+    <p class="muted" style="font-size:15px;margin-top:10px">내 주변 500m 공구방만 보여 드려요.<br>편의점 앞, 학교 정문처럼 안전한 곳에서 만나요.</p>
+  </section>
+  <section class="slide">
+    <div class="illu">🧾✅</div>
+    <h1 style="font-size:26px;font-weight:800;margin-top:28px;line-height:1.35">계산도 정산도<br>반띵이 대신</h1>
+    <p class="muted" style="font-size:15px;margin-top:10px">1칸 가격은 자동 계산, 입금 확인과<br>영수증 인증까지 한 흐름으로 끝나요.</p>
+  </section>
+</div>
+<div class="dots" id="dots"><i class="on"></i><i></i><i></i></div>
+{% endblock %}
+{% block bottom %}
+<div class="bottom"><a class="btn" href="{{ url_for('signup') }}">시작하기</a>
+  <div class="small" style="text-align:center;margin-top:10px">이미 계정이 있나요? <a class="u" href="{{ url_for('login') }}">로그인</a>
+    <span class="muted"> · <a href="{{ url_for('terms') }}">약관</a> · <a href="{{ url_for('privacy') }}">개인정보처리방침</a></span></div></div>
+{% endblock %}
+{% block scripts %}
+<script nonce="{{ csp_nonce() }}">
+  const s = document.getElementById('slides'), dots = [...document.querySelectorAll('#dots i')];
+  s.addEventListener('scroll', () => {
+    const i = Math.round(s.scrollLeft / s.clientWidth);
+    dots.forEach((d, k) => d.classList.toggle('on', k === i));
+  });
+</script>
+{% endblock %}

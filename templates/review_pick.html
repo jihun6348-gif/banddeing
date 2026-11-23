@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import back %}
+{% block header %}{{ back('거래 후기', url_for('my', tab='done')) }}{% endblock %}
+{% block content %}
+<div class="body">
+  <div class="h1">‘{{ room.title }}’ 함께한 이웃</div>
+  {% if room.status != 'done' %}<p class="muted" style="margin-bottom:8px">모든 참여자가 수령하면 거래가 완료돼요. 먼저 후기를 남겨도 괜찮아요.</p>{% endif %}
+  {% for t in targets %}
+    <div class="ln row">
+      <div class="row" style="gap:10px;justify-content:flex-start"><div class="av">{{ t.nickname[0] }}</div><b>{{ t.nickname }}</b></div>
+      {% if t.done %}
+        <div style="display:flex;gap:10px;align-items:center">
+          <span class="badge green">후기 완료 ✓</span>
+          <a class="link-btn small" href="{{ url_for('review_update', review_id=t.review_id) }}">수정</a>
+          <form method="post" action="{{ url_for('review_delete', review_id=t.review_id) }}"
+                data-confirm="이 후기를 삭제할까요?">{{ csrf_field() }}
+            <button class="link-btn small">삭제</button></form>
+        </div>
+      {% else %}<a class="btn sm" style="width:auto;padding:0 16px" href="{{ url_for('review', room_id=room.id, to_id=t.id) }}">후기 쓰기</a>{% endif %}
+    </div>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block bottom %}<div class="bottom"><a class="btn ghost" href="{{ url_for('home') }}">홈으로</a></div>{% endblock %}
